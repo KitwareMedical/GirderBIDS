@@ -4,11 +4,39 @@ Girder plugin to import a BIDS database
 
 ## 1. Setup
 
+### Ubuntu 22.04:
 ```bash
 pip install girder girder-client fire bids-validator-deno
 ```
 
+### MacOS
+```bash
+curl -fsSL https://deno.land/install.sh | sh
+deno compile -ERWN -o bids-validator jsr:@bids/validator
+pip install girder girder-client fire
+```
+
+### Windows
+Not currently supported.
+
 ## 2. Build girder front
+
+### Ubuntu 22.04
+
+```bash
+girder build
+```
+
+### MacOS
+Install npm using Homebrew : 
+```bash
+brew install node
+```
+Add the following environment variable:
+```bash
+export NODE_OPTIONS=--openssl-legacy-provider
+```
+
 ```bash
 girder build
 ```
@@ -30,6 +58,14 @@ systemctl start mongod
 systemctl enable mongod
 chown mongodb:mongodb /var/log/mongodb/mongod.log
 chown -R mongodb:mongodb /var/lib/mongodb/*
+```
+
+### MacOS
+Add MongoDB 4.4:
+```bash
+brew tap mongodb/brew
+brew install mongodb-community@4.4
+brew services start mongodb-community@4.4
 ```
 
 ## 3. Serve girder
