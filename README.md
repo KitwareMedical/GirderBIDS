@@ -6,7 +6,7 @@ Girder plugin to import a BIDS database
 
 ### Ubuntu 22.04:
 ```bash
-pip install girder girder-client fire bids-validator-deno
+pip install -r requirements.txt
 ```
 
 ### MacOS

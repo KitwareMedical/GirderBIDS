@@ -61,7 +61,7 @@ def validate_bids(directory):
     :return: Boolean indicating whether the dataset is valid.
     """
     try:
-        result = subprocess.run(['bids-validator', '--json', directory],
+        result = subprocess.run(['bids-validator-deno', '--json', directory],
                                 capture_output=True, text=True)
         output = result.stdout
         errors = result.stderr
