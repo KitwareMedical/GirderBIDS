@@ -4,21 +4,21 @@ from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, filtermodel
 from girder.constants import AccessType, SortDir, TokenScope
-from pydantic import TypeAdapter
 from pymongo.cursor import Cursor
 
 from bids_plugin.models import BIDSDatasetModel, BIDSFolderModel, BIDSItemModel
-from bids_plugin.utility import BIDSHierarchy, GirderModel
+from bids_plugin.utility import GirderModel
 
 
 class BIDSItemResource(Resource):
-    """RESTful Case resource"""
+    """RESTful BIDS Item resource"""
 
     def __init__(self) -> None:
         super().__init__()
         self.resourceName = "bids_item"
         self._model = BIDSItemModel()
         self.route("GET", (), self.list_items)
+        self.route("GET", (":id", "path"), self.get_dataset_path)
         self.route("POST", (), self.create_item)
 
     @access.user(TokenScope.DATA_READ)
@@ -36,45 +36,29 @@ class BIDSItemResource(Resource):
         )
         .modelParam(
             "source_id",
-            "The ID of the source item",
+            "The ID of the source BIDS item",
             model=BIDSItemModel,
             level=AccessType.READ,
             paramType="query",
             destName="source",
             required=False,
         )
-        .jsonParam(
-            "bids_hierarchy",
-            "An optional JSON object containing the hierarchy to search",
-            paramType="form",
-            schema=TypeAdapter(BIDSHierarchy).json_schema(),
-            required=False,
-        )
         .param(
-            "is_metadata",
-            "Whether to list metadata items",
+            "name",
+            "The name of the BIDS item to search for",
             dataType="boolean",
             required=False,
             strip=True,
         )
-        .param(
-            "suffix",
-            "Pass this to search BIDS item by suffix",
-            required=False
-        )
-        .param(
-            "extension",
-            "Pass this to search BIDS item by extension",
-            required=False
-        )
-        .pagingParams(defaultSort="created", defaultSortDir=SortDir.DESCENDING)
+        .param("suffix", "Pass this to search BIDS item by suffix", required=False)
+        .param("extension", "Pass this to search BIDS item by extension", required=False)
+        .pagingParams(defaultSort="name", defaultSortDir=SortDir.ASCENDING)
     )
     def list_items(
         self,
         dataset: GirderModel,
         source: GirderModel | None,
-        bids_hierarchy: dict[str, Any] | None,
-        is_metadata: bool | None,
+        name: str | None,
         suffix: str | None,
         extension: str | None,
         limit: int,
@@ -86,18 +70,14 @@ class BIDSItemResource(Resource):
         if source is not None:
             query.update({"source_id": source["_id"]})
 
-        if bids_hierarchy is not None:
-            TypeAdapter(BIDSHierarchy).validate_python(bids_hierarchy)
-            query.update({f"bids_hierarchy.{key}": value for key, value in bids_hierarchy.items()})
-
-        if is_metadata is not None:
-            query.update({"is_metadata": is_metadata})
+        if name is not None:
+            query.update({"name": name})
 
         if suffix is not None:
-            query.update({"bids_hierarchy.suffix": suffix})
+            query.update({"suffix": suffix})
 
         if extension is not None:
-            query.update({"bids_hierarchy.ext": extension})
+            query.update({"extension": extension})
 
         return self._model.find(
             query=query,
@@ -113,14 +93,6 @@ class BIDSItemResource(Resource):
         Description("Create a new BIDS item.")
         .responseClass("BIDSItem")
         .param("name", "Name of the BIDS item.", strip=True)
-        .modelParam(
-            "dataset_id",
-            "The ID of the root BIDS dataset",
-            model=BIDSDatasetModel,
-            level=AccessType.WRITE,
-            paramType="query",
-            destName="dataset",
-        )
         .modelParam(
             "folder_id",
             "The ID of the parent BIDS folder.",
@@ -139,12 +111,11 @@ class BIDSItemResource(Resource):
             required=False,
         )
         .param(
-            "is_metadata",
-            "Whether the item defines a metadata file",
+            "reuse_existing",
+            "Return existing BIDS folder if it exists rather than creating a new one.",
             dataType="boolean",
             required=False,
             default=False,
-            strip=True,
         )
         .errorResponse()
         .errorResponse("Write access was denied on the parent.", 403)
@@ -152,18 +123,26 @@ class BIDSItemResource(Resource):
     def create_item(
         self,
         name: str,
-        dataset: GirderModel,
         folder: GirderModel,
         source: GirderModel | None,
-        is_metadata: bool,
+        reuse_existing: bool,
     ) -> GirderModel:
         user = self.getCurrentUser()
 
         return self._model.create_bids_item(
             user,
             name,
-            dataset,
             folder,
             source,
-            is_metadata=is_metadata,
+            reuse_existing,
         )
+
+    @access.user(scope=TokenScope.DATA_READ)
+    @autoDescribeRoute(
+        Description("Get the path to BIDS dataset of the item.")
+        .modelParam("id", model=BIDSItemModel, level=AccessType.READ, destName="item")
+        .errorResponse("ID was invalid.")
+        .errorResponse("Read access was denied for the item.", 403)
+    )
+    def get_dataset_path(self, item: GirderModel) -> list[GirderModel]:
+        return self._model.parents_to_dataset(item, self.getCurrentUser())

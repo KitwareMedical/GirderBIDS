@@ -54,16 +54,14 @@ def subject_folder(dataset: Any, user: Any) -> Any:
         user,
         "sub-01",
         dataset,
-        dataset,
     )
 
 
 @pytest.fixture
-def datatype_folder(dataset: Any, subject_folder: Any, user: Any) -> Any:
+def datatype_folder(subject_folder: Any, user: Any) -> Any:
     return BIDSFolderModel().create_bids_folder(
         user,
         "anat",
-        dataset,
         subject_folder,
     )
 
@@ -86,12 +84,12 @@ def dataset_list(
 
 @pytest.fixture
 def subject_folder_list(dataset: Any, user: Any) -> Any:
-    return [BIDSFolderModel().create_bids_folder(user, f"sub-0{i + 1}", dataset, dataset) for i in range(2)]
+    return [BIDSFolderModel().create_bids_folder(user, f"sub-0{i + 1}", dataset) for i in range(2)]
 
 
 @pytest.fixture
-def item_list(dataset: Any, datatype_folder: Any, user: Any) -> Any:
+def item_list(datatype_folder: Any, user: Any) -> Any:
     return [
-        BIDSItemModel().create_bids_item(user, f"sub-01_task-rest_analysis{i + 1}.nii.gz", dataset, datatype_folder)
+        BIDSItemModel().create_bids_item(user, f"sub-01_task-rest_analysis{i + 1}.nii.gz", datatype_folder)
         for i in range(2)
     ]

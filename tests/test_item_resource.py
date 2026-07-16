@@ -25,7 +25,9 @@ def test_list_items(db: Any, dataset: GirderModel, item_list: list[GirderModel],
     assert any(it["name"] == item_list[1]["name"] for it in resp_item_list)
 
 
-def test_list_items_matches_suffix(db: Any, dataset: GirderModel, item_list: list[GirderModel], server: Any, user: Any) -> None:
+def test_list_items_matches_suffix(
+    db: Any, dataset: GirderModel, item_list: list[GirderModel], server: Any, user: Any
+) -> None:
     resp = server.request(
         method="GET",
         path="/bids_item",
@@ -39,7 +41,7 @@ def test_list_items_matches_suffix(db: Any, dataset: GirderModel, item_list: lis
 
     assert len(resp_item_list) == 1
     assert any(it["name"] == item_list[0]["name"] for it in resp_item_list)
-
+    assert resp_item_list[0]["suffix"] == "analysis1"
 
 
 def test_create_item(
@@ -50,7 +52,6 @@ def test_create_item(
         method="POST",
         path="/bids_item",
         params={
-            "dataset_id": dataset["_id"],
             "folder_id": datatype_folder["_id"],
             "name": item_name,
         },
@@ -63,9 +64,9 @@ def test_create_item(
     assert ObjectId(resp_item["creatorId"]) == user["_id"]
     assert ObjectId(resp_item["folderId"]) == datatype_folder["_id"]
     assert ObjectId(resp_item.get("dataset_id")) == dataset["_id"]
-    assert resp_item.get("bids_hierarchy")
-    assert "is_metadata" in resp_item
     assert "source_id" in resp_item
+    assert resp_item["suffix"] == "analysis"
+    assert resp_item["extension"] == "nii.gz"
 
     saved_item = BIDSItemModel().load(resp_item["_id"], user=user, level=AccessType.WRITE)
 

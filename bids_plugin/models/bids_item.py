@@ -1,11 +1,12 @@
+import re
 from typing import Any
 
 from girder.constants import AccessType
-from girder.exceptions import GirderException
+from girder.exceptions import ValidationException
 from girder.models.item import Item
 
 from bids_plugin.models import BIDSDatasetModel, BIDSFolderModel
-from bids_plugin.utility import BIDSHierarchy, BIDSItem, GirderModel
+from bids_plugin.utility import BIDSDatatype, BIDSItem, GirderModel
 
 
 class BIDSItemModel(Item):
@@ -16,81 +17,97 @@ class BIDSItemModel(Item):
             fields=BIDSItem.fields(),
         )
 
-    def _build_bids_hierarchy(self, doc: GirderModel, folder: GirderModel, is_metadata: bool) -> BIDSHierarchy:
-        try:
-            hierarchy = BIDSHierarchy(**folder["bids_hierarchy"])
-            if hierarchy.datatype is None and not is_metadata:
-                raise GirderException("Invalid BIDS Hierarchy: Data items must be at datatype level")
-            name_parts = doc["name"].split(".")
-            hierarchy.suffix = name_parts[0].split("_")[-1]
-            hierarchy.ext = ".".join(name_parts[1:])
-            return hierarchy
+    def _check_bids_hierarchy(
+        self, item_name: GirderModel, item_extension: str | None, parent_folder: GirderModel
+    ) -> None:
+        parent_name = parent_folder["name"]
+        if parent_name not in BIDSDatatype and not (
+            item_extension is None or item_extension.startswith(("json", "tsv"))
+        ):
+            raise ValidationException("Invalid BIDS Hierarchy: data items must be at datatype level.")
 
-        except GirderException as e:
-            self.remove(doc)
-            raise e
+        if "dataset_description" in parent_folder:
+            return
+
+        hierarchy = BIDSFolderModel().parents_to_dataset(parent_folder)
+        prefix = "_".join(folder["name"] for folder in hierarchy)
+        if not item_name.startswith(prefix):
+            raise ValidationException(f"Invalid BIDS Item name: item name must start with '{prefix}'.")
+
+    def _extract_bids_suffix_and_extension(self, item_name: str) -> tuple[str | None, str | None]:
+        name_parts = item_name.split(".")
+        base_name = name_parts[0]
+        extension = ".".join(name_parts[1:]) if len(name_parts) > 1 else None
+
+        if "-" not in base_name:
+            return None, extension
+
+        match = re.search(r"_([a-zA-Z0-9]+)$", base_name)
+        if match:
+            return match.group(1), extension
+
+        return None, extension
+
+    def parents_to_dataset(self, item: GirderModel, user: GirderModel | None = None) -> list[GirderModel]:
+        force = user is None
+        folder_model = BIDSFolderModel()
+        parent_folder = folder_model.load(item["folderId"], level=AccessType.READ, user=user, force=force)
+        return folder_model.parents_to_dataset(parent_folder, user, [folder_model.filter(parent_folder, user)])
 
     def create_bids_item(
         self,
         user: GirderModel,
         name: str,
-        dataset: GirderModel,
-        folder: GirderModel,
+        parent_folder: GirderModel,
         source: GirderModel | None = None,
-        is_metadata: bool = False,
+        reuse_existing: bool = False,
     ) -> GirderModel | Any:
-        BIDSDatasetModel().validate_bids(dataset)
+        if reuse_existing:
+            existing = self.findOne({"folderId": parent_folder["_id"], "name": name})
+            if existing:
+                return existing
 
-        if folder["_id"] != dataset["_id"]:
-            BIDSFolderModel().validate_bids(folder)
+        if parent_folder.get("dataset_description"):
+            BIDSDatasetModel().validate_bids(parent_folder)
+            dataset_id = parent_folder["_id"]
+        else:
+            BIDSFolderModel().validate_bids(parent_folder)
+            dataset_id = parent_folder["dataset_id"]
 
-        bids_item = self.createItem(name, user, folder)
-        hierarchy = self._build_bids_hierarchy(bids_item, folder, is_metadata)
-        bids_item.update(
+        suffix, extension = self._extract_bids_suffix_and_extension(name)
+
+        self._check_bids_hierarchy(name, extension, parent_folder)
+
+        item = self.createItem(name, user, parent_folder)
+        item.update(
             BIDSItem(
                 name=name,
-                dataset_id=dataset["_id"],
+                dataset_id=dataset_id,
                 source_id=source["_id"] if source else None,
-                bids_hierarchy=hierarchy,
-                is_metadata=is_metadata,
+                suffix=suffix,
+                extension=extension,
             ).as_dict()
         )
 
-        return self.save_bids(bids_item)
+        return self.save_bids(item)
 
-    def save_bids(self, doc: GirderModel) -> None:
-        self.validate_bids(doc)
-        return self.save(doc)
-
-    def validate_bids(self, doc: GirderModel) -> None:
+    def save_bids(self, item: GirderModel) -> None:
         try:
-            if not doc.get("dataset_id"):
-                raise GirderException("Invalid BIDS Item: missing 'dataset_id' field")
-
-            if not doc.get("bids_hierarchy"):
-                raise GirderException("Invalid BIDS Item: missing 'bids_hierarchy' field")
-
-            if "source_id" not in doc:
-                raise GirderException("Invalid BIDS Item: missing 'source_id' field")
-
-            if "is_metadata" not in doc:
-                raise GirderException("Invalid BIDS Item: missing 'is_metadata' field")
-
-            item_name = doc["name"]
-            if not doc["is_metadata"]:
-                subject_name = doc["bids_hierarchy"]["subject"]
-                session_name = doc["bids_hierarchy"]["session"]
-                item_name_parts = item_name.split("_")
-                if item_name_parts[0] != subject_name:
-                    raise GirderException(f"Invalid BIDS Item name: item name must start with '{subject_name}'")
-
-                if session_name is not None and item_name_parts[1] != session_name:
-                    raise GirderException(
-                        f"Invalid BIDS Item name: item name must start with '{subject_name}_{session_name}'"
-                    )
-
-                # NTH: could also check suffixes based on datatype
-
-        except GirderException as e:
-            self.remove(doc)
+            self.validate_bids(item)
+            return self.save(item)
+        except ValidationException as e:
+            self.remove(item)
             raise e
+
+    def validate_bids(self, item: GirderModel) -> None:
+        if not item.get("dataset_id"):
+            raise ValidationException("Invalid BIDS Item: missing 'dataset_id' field")
+
+        if "source_id" not in item:
+            raise ValidationException("Invalid BIDS Item: missing 'source_id' field")
+
+        if "suffix" not in item:
+            raise ValidationException("Invalid BIDS Item: missing 'suffix' field")
+
+        if "extension" not in item:
+            raise ValidationException("Invalid BIDS Item: missing 'extension' field")

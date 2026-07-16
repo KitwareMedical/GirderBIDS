@@ -161,7 +161,7 @@ class BIDSImporter:
         # Parse dataset recursively
         for element_path in file_pattern.iterdir():
             if element_path.is_file():
-                self._plugin_upload_item(element_path, dataset_folder["_id"], dataset_folder["_id"], True)
+                self._plugin_upload_item(element_path, dataset_folder["_id"])
 
             elif element_path.name == "derivatives":
                 derivative_folder = self.girder_client.loadOrCreateFolder(
@@ -172,14 +172,13 @@ class BIDSImporter:
                         self._plugin_upload_dataset(derivative_element_path, derivative_folder["_id"])
 
             else:
-                self._plugin_upload_folder(element_path, dataset_folder["_id"], dataset_folder["_id"])
+                self._plugin_upload_folder(element_path, dataset_folder["_id"])
 
-    def _plugin_upload_folder(self, folder_path: Path, dataset_id: str, parent_id: str) -> None:
+    def _plugin_upload_folder(self, folder_path: Path, parent_id: str) -> None:
         logger.info(f"Creating BIDS Folder from {folder_path.name}")
         folder = self.girder_client.post(
             "bids_folder",
             parameters={
-                "dataset_id": dataset_id,
                 "folder_id": parent_id,
                 "name": folder_path.name,
             },
@@ -187,24 +186,20 @@ class BIDSImporter:
 
         for element_path in folder_path.iterdir():
             if element_path.is_dir():
-                self._plugin_upload_folder(element_path, dataset_id, folder["_id"])
+                self._plugin_upload_folder(element_path, folder["_id"])
             else:
                 self._plugin_upload_item(
                     element_path,
-                    dataset_id,
                     folder["_id"],
-                    element_path.name.endswith((".json", ".tsv", ".tsv.gz")),
                 )
 
-    def _plugin_upload_item(self, item_path: Path, dataset_id: str, folder_id: str, is_metadata: bool) -> None:
+    def _plugin_upload_item(self, item_path: Path, folder_id: str) -> None:
         logger.info(f"Creating BIDS Item from {item_path.name}")
         item = self.girder_client.post(
             "bids_item",
             parameters={
-                "dataset_id": dataset_id,
                 "folder_id": folder_id,
                 "name": item_path.name,
-                "is_metadata": is_metadata,
             },
         )
         self.girder_client.uploadFileToItem(item["_id"], str(item_path))

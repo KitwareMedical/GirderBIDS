@@ -69,7 +69,6 @@ def test_list_derivative_datasets(
     assert any(ds["name"] == dataset_list[2]["name"] for ds in resp_dataset_list)
 
 
-
 def test_create_dataset(
     db: Any, collection: GirderModel, raw_dataset_description: BIDSDescription, server: Any, user: GirderModel
 ) -> None:

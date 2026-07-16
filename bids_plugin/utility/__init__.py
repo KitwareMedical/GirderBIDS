@@ -3,7 +3,6 @@ from .models import (
     BIDSDatatype,
     BIDSDescription,
     BIDSFolder,
-    BIDSHierarchy,
     BIDSItem,
     GirderModel,
 )
@@ -14,7 +13,6 @@ __all__ = [
     "BIDSDatatype",
     "BIDSDescription",
     "BIDSFolder",
-    "BIDSHierarchy",
     "BIDSItem",
     "GirderModel",
     "MongoOperators",

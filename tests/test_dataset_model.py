@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 from bson.objectid import ObjectId
 from girder.constants import AccessType
-from girder.exceptions import GirderException
+from girder.exceptions import ValidationException
 
 from bids_plugin.models import BIDSDatasetModel
 from bids_plugin.utility import BIDSDescription, GirderModel
@@ -13,7 +13,7 @@ def test_create_dataset_without_dataset_description_raises_error(
     db: Any, collection: GirderModel, user: GirderModel
 ) -> None:
     dataset_name = "Test Dataset"
-    with pytest.raises(GirderException) as exc_info:
+    with pytest.raises(ValidationException) as exc_info:
         BIDSDatasetModel().create_bids_dataset(
             user,
             dataset_name,
@@ -44,7 +44,6 @@ def test_create_dataset_with_dataset_description(db: Any, collection: GirderMode
     assert created_dataset["baseParentId"] == collection["_id"]
     assert created_dataset.get("dataset_description")
     assert created_dataset.get("derivatives_folder_id")
-    assert created_dataset.get("bids_hierarchy")
 
     saved_dataset = BIDSDatasetModel().load(created_dataset["_id"], user=user, level=AccessType.WRITE)
 

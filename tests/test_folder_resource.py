@@ -33,7 +33,6 @@ def test_create_subject_folder(db: Any, dataset: GirderModel, server: Any, user:
         method="POST",
         path="/bids_folder",
         params={
-            "dataset_id": dataset["_id"],
             "folder_id": dataset["_id"],
             "name": subject_folder_name,
         },
@@ -46,8 +45,6 @@ def test_create_subject_folder(db: Any, dataset: GirderModel, server: Any, user:
     assert ObjectId(resp_subject_folder["creatorId"]) == user["_id"]
     assert ObjectId(resp_subject_folder["parentId"]) == dataset["_id"]
     assert ObjectId(resp_subject_folder.get("dataset_id")) == dataset["_id"]
-    assert resp_subject_folder.get("bids_hierarchy")
-    assert resp_subject_folder["bids_hierarchy"].get("subject") == subject_folder_name
 
     saved_subject_folder = BIDSFolderModel().load(resp_subject_folder["_id"], user=user, level=AccessType.WRITE)
 

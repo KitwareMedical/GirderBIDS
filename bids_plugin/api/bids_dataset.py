@@ -14,7 +14,7 @@ from bids_plugin.utility import BIDSDescription, GirderModel, MongoOperators
 
 
 class BIDSDatasetResource(Resource):
-    """RESTful Case resource"""
+    """RESTful BIDS dataset resource"""
 
     def __init__(self) -> None:
         super().__init__()
@@ -104,11 +104,18 @@ class BIDSDatasetResource(Resource):
             paramType="form",
             schema=TypeAdapter(BIDSDescription).json_schema(),
         )
+        .param(
+            "reuse_existing",
+            "Return existing BIDS dataset if it exists rather than creating a new one.",
+            dataType="boolean",
+            required=False,
+            default=False,
+        )
         .errorResponse()
         .errorResponse("Write access was denied on the parent.", 403)
     )
     def create_dataset(
-        self, parent_type: str, parent_id: str, name: str, dataset_description: dict[str, Any]
+        self, parent_type: str, parent_id: str, name: str, dataset_description: dict[str, Any], reuse_existing: bool
     ) -> GirderModel:
         user = self.getCurrentUser()
         parent = ModelImporter.model(parent_type).load(id=parent_id, user=user, level=AccessType.WRITE, exc=True)
@@ -122,4 +129,5 @@ class BIDSDatasetResource(Resource):
             parent,
             BIDSDescription(**dataset_description),
             parent_type=parent_type,
+            reuse_existing=reuse_existing,
         )

@@ -24,16 +24,6 @@ class BIDSDatatype(Enum):
 
 
 @dataclass
-class BIDSHierarchy:
-    is_derivative: bool = False
-    subject: str | None = None
-    session: str | None = None
-    datatype: str | None = None
-    suffix: str | None = None
-    ext: str | None = None
-
-
-@dataclass
 class Model:
     name: str | None = None
 
@@ -60,28 +50,28 @@ class BIDSDescription:
     Authors: list = field(default_factory=list)
     Acknowledgements: str = ""
     HowToAcknowledge: str = ""
-    Funding: list = field(default_factory=list)
-    EthicsApprovals: list = field(default_factory=list)
-    ReferencesAndLinks: list = field(default_factory=list)
+    Funding: list[Any] = field(default_factory=list)
+    EthicsApprovals: list[Any] = field(default_factory=list)
+    ReferencesAndLinks: list[Any] = field(default_factory=list)
     DatasetDOI: str = "doi:"
+    GeneratedBy: str = ""
+    SourceDatasets: list[Any] = field(default_factory=list)
 
 
 @dataclass
 class BIDSItem(Model):
     dataset_id: str | None = None
+    extension: str | None = None
+    suffix: str | None = None
     source_id: str | None = None
-    bids_hierarchy: BIDSHierarchy = field(default_factory=BIDSHierarchy)
-    is_metadata: bool = False
 
 
 @dataclass
 class BIDSFolder(Model):
     dataset_id: str | None = None
-    bids_hierarchy: BIDSHierarchy = field(default_factory=BIDSHierarchy)
 
 
 @dataclass
 class BIDSDataset(Model):
     dataset_description: BIDSDescription = field(default_factory=BIDSDescription)
     derivatives_folder_id: str | None = None
-    bids_hierarchy: BIDSHierarchy = field(default_factory=BIDSHierarchy)
