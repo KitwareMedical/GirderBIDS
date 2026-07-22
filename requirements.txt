@@ -1,4 +1,0 @@
-bids-validator-deno==2.4.1
-girder
-girder-client
-fire
