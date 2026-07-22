@@ -82,9 +82,6 @@ isort.required-imports = []
 version_toml = [
     "pyproject.toml:project.version",
 ]
-version_variables = [
-    "__init__.py:__version__",
-]
 
 [tool.semantic_release.publish]
 dist_glob_patterns = ["dist/*"]
