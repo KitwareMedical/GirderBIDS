@@ -9,6 +9,7 @@ from girder.models.item import Item
 
 from bids_plugin.models import BIDSDatasetModel, BIDSFolderModel
 from bids_plugin.utility import BIDSDatatype, BIDSItem, GirderModel
+from bids_plugin.utility.models import JSON_EXT, TSV_EXT
 
 
 class BIDSItemModel(Item):
@@ -24,7 +25,7 @@ class BIDSItemModel(Item):
     ) -> None:
         parent_name = parent_folder["name"]
         if parent_name not in BIDSDatatype and not (
-            item_extension is None or item_extension.startswith(("json", "tsv"))
+            item_extension is None or item_extension.startswith((JSON_EXT, TSV_EXT))
         ):
             raise ValidationException("Invalid BIDS Hierarchy: data items must be at datatype level.")
 
@@ -118,7 +119,7 @@ class BIDSItemModel(Item):
         if "bids_metadata" not in item:
             item["bids_metadata"] = {}
 
-        if item["extension"] == "json":
+        if item["extension"] == JSON_EXT:
             # JSON files cannot have metadata
             return item
 

@@ -5,6 +5,10 @@ from typing import Any
 GirderModel = dict[str, Any]
 
 
+JSON_EXT = "json"
+TSV_EXT = "tsv"
+
+
 class BIDSDatatype(Enum):
     UNDEFINED = None
     ANAT = "anat"

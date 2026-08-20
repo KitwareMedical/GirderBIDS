@@ -1,3 +1,4 @@
+from .events import on_bids_metadata_updated
 from .models import (
     BIDSDataset,
     BIDSDatatype,
@@ -16,4 +17,5 @@ __all__ = [
     "BIDSItem",
     "GirderModel",
     "MongoOperators",
+    "on_bids_metadata_updated",
 ]
