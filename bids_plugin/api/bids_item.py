@@ -52,6 +52,8 @@ class BIDSItemResource(Resource):
         )
         .param("suffix", "Pass this to search BIDS item by suffix", required=False)
         .param("extension", "Pass this to search BIDS item by extension", required=False)
+        .param("search_text", "Pass to perform a search.", default="", required=False)
+        .param("search_mode", "Search mode", default="prefix", required=False)
         .pagingParams(defaultSort="name", defaultSortDir=SortDir.ASCENDING)
     )
     def list_items(
@@ -61,6 +63,8 @@ class BIDSItemResource(Resource):
         name: str | None,
         suffix: str | None,
         extension: str | None,
+        search_text: str,
+        search_mode: str,
         limit: int,
         offset: int,
         sort: Any,
@@ -79,13 +83,24 @@ class BIDSItemResource(Resource):
         if extension is not None:
             query.update({"extension": extension})
 
-        return self._model.find(
-            query=query,
+        return self._list_items(
+            query,
+            search_text,
+            search_mode,
             limit=limit,
             offset=offset,
             sort=sort,
             user=user,
         )
+
+    def _list_items(self, query: dict[str, Any], search_text: str, search_mode: str, **kwargs) -> Cursor | Any:
+        if search_text:
+            if search_mode == "prefix":
+                return self._model.prefixSearch(query=search_text, filters=query, **kwargs)
+            if search_text == "text":
+                return self._model.textSearch(query=search_text, filters=query, **kwargs)
+
+        return self._model.find(query=query, **kwargs)
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @filtermodel(model=BIDSItemModel)
