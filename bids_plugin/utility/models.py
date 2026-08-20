@@ -64,6 +64,7 @@ class BIDSItem(Model):
     extension: str | None = None
     suffix: str | None = None
     source_id: str | None = None
+    bids_metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

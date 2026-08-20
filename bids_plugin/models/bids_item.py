@@ -1,6 +1,8 @@
 import re
+from datetime import datetime, timezone
 from typing import Any
 
+from girder import events
 from girder.constants import AccessType
 from girder.exceptions import ValidationException
 from girder.models.item import Item
@@ -91,7 +93,7 @@ class BIDSItemModel(Item):
 
         return self.save_bids(item)
 
-    def save_bids(self, item: GirderModel) -> None:
+    def save_bids(self, item: GirderModel) -> GirderModel | Any:
         try:
             self.validate_bids(item)
             return self.save(item)
@@ -111,3 +113,22 @@ class BIDSItemModel(Item):
 
         if "extension" not in item:
             raise ValidationException("Invalid BIDS Item: missing 'extension' field")
+
+    def set_bids_metadata(self, item: GirderModel, metadata: dict[str, Any]) -> GirderModel | Any:
+        if "bids_metadata" not in item:
+            item["bids_metadata"] = {}
+
+        if item["extension"] == "json":
+            # JSON files cannot have metadata
+            return item
+
+        # Add new metadata to existing metadata
+        item["bids_metadata"].update(metadata.items())
+
+        self.validateKeys(item["meta"])
+
+        item["updated"] = datetime.now(timezone.utc)
+
+        events.trigger("model.bids_item.bids_metadata.updated", item)
+
+        return self.save_bids(item)

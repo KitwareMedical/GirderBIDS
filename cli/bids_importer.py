@@ -104,7 +104,7 @@ class BIDSImporter:
                 return item
         return None
 
-    def _extract_metadata(self, location_id: str, location_type: str = "folder") -> None:
+    def _extract_metadata(self, use_plugin: bool, location_id: str, location_type: str = "folder") -> None:
         """
         Extracts metadata from JSON files and adds it to Girder item's metadata.
 
@@ -122,13 +122,16 @@ class BIDSImporter:
                         continue
 
                     metadata = self._get_item_metadata(item)
-                    self.girder_client.addMetadataToItem(associated_item["_id"], metadata)
+                    if use_plugin:
+                        self.girder_client.put(f"bids_item/{associated_item['_id']}/metadata", json=metadata)
+                    else:
+                        self.girder_client.addMetadataToItem(associated_item["_id"], metadata)
 
         for child_folder_id in self.girder_client.listFolder(location_id, location_type):
-            self._extract_metadata(child_folder_id["_id"])
+            self._extract_metadata(use_plugin, child_folder_id["_id"])
 
-    def extract_metadata(self) -> None:
-        self._extract_metadata(self.root_folder_id, self.root_folder_type)
+    def extract_metadata(self, use_plugin: bool = False) -> None:
+        self._extract_metadata(use_plugin, self.root_folder_id, self.root_folder_type)
 
     def upload_dataset(self, use_plugin: bool = False) -> None:
         if len(list(self.girder_client.listFolder(self.root_folder_id, self.root_folder_type, self.dataset_name))) > 0:
@@ -234,7 +237,7 @@ def main(
     :param location_id: The ID of the root folder in Girder where the data will be uploaded.
     :param location_type: The type of the root folder: "folder" or "collection".
     :param ignore_validation: Whether to skip BIDS validation before upload.
-    :param plugin: whether to use BIDS Girder plugin
+    :param use_plugin: whether to use BIDS Girder plugin
     :param extract_metadata: whether to extract metadata of files to enrich items metadata
     """
     if not ignore_validation:
@@ -257,7 +260,7 @@ def main(
     else:
         if extract_metadata:
             logger.debug("Extract metadata")
-            importer.extract_metadata()
+            importer.extract_metadata(use_plugin)
         logger.info("Successful upload of dataset")
 
 

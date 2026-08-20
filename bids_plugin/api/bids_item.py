@@ -19,6 +19,7 @@ class BIDSItemResource(Resource):
         self._model = BIDSItemModel()
         self.route("GET", (), self.list_items)
         self.route("GET", (":id", "path"), self.get_dataset_path)
+        self.route("PUT", (":id", "metadata"), self.set_bids_metadata)
         self.route("POST", (), self.create_item)
 
     @access.user(TokenScope.DATA_READ)
@@ -161,3 +162,18 @@ class BIDSItemResource(Resource):
     )
     def get_dataset_path(self, item: GirderModel) -> list[GirderModel]:
         return self._model.parents_to_dataset(item, self.getCurrentUser())
+
+    @access.user(scope=TokenScope.DATA_WRITE)
+    @filtermodel(model=BIDSItemModel)
+    @autoDescribeRoute(
+        Description("Set bids_metadata fields on a BIDS item.")
+        .responseClass("BIDSItem")
+        .modelParam("id", model=BIDSItemModel, level=AccessType.WRITE)
+        .jsonParam(
+            "metadata", "A JSON object containing the bids metadata keys to add", paramType="body", requireObject=True
+        )
+        .errorResponse(("ID was invalid.", "Invalid JSON passed in request body.", "Metadata key name was invalid."))
+        .errorResponse("Write access was denied for the item.", 403)
+    )
+    def set_bids_metadata(self, item: GirderModel, metadata: dict[str, Any]) -> GirderModel | Any:
+        return self._model.set_bids_metadata(item, metadata)
