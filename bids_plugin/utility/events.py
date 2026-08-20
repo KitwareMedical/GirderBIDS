@@ -35,12 +35,7 @@ def on_bids_metadata_updated(event: Event) -> None:
     stream = io.BytesIO(json_bytes)
     size = len(json_bytes)
 
-    existing_file = None
-    for file_obj in item_model.childFiles(metadata_sidecar_item):
-        if file_obj["name"] == metadata_sidecar_name:
-            existing_file = file_obj
-            break
-
+    existing_file = file_model.findOne({"itemId": metadata_sidecar_item["_id"], "name": metadata_sidecar_name})
     if existing_file:
         file_model.remove(existing_file)
 

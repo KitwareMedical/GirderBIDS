@@ -53,7 +53,7 @@ class BIDSDatasetResource(Resource):
             required=False,
         )
         .param("search_text", "Pass to perform a search.", default="", required=False)
-        .param("search_mode", "Search mode", default="prefix", required=False)
+        .param("search_mode", "Search mode", default="prefix", enum=["prefix", "text"], required=False)
         .pagingParams(defaultSort="created", defaultSortDir=SortDir.DESCENDING)
     )
     def list_datasets(

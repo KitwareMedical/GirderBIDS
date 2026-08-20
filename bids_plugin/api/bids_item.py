@@ -54,7 +54,7 @@ class BIDSItemResource(Resource):
         .param("suffix", "Pass this to search BIDS item by suffix", required=False)
         .param("extension", "Pass this to search BIDS item by extension", required=False)
         .param("search_text", "Pass to perform a search.", default="", required=False)
-        .param("search_mode", "Search mode", default="prefix", required=False)
+        .param("search_mode", "Search mode", default="prefix", enum=["prefix", "text"], required=False)
         .pagingParams(defaultSort="name", defaultSortDir=SortDir.ASCENDING)
     )
     def list_items(
