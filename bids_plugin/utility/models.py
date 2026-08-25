@@ -5,6 +5,10 @@ from typing import Any
 GirderModel = dict[str, Any]
 
 
+JSON_EXT = "json"
+TSV_EXT = "tsv"
+
+
 class BIDSDatatype(Enum):
     UNDEFINED = None
     ANAT = "anat"
@@ -64,6 +68,7 @@ class BIDSItem(Model):
     extension: str | None = None
     suffix: str | None = None
     source_id: str | None = None
+    bids_metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

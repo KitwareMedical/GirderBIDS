@@ -52,6 +52,8 @@ class BIDSDatasetResource(Resource):
             dataType="boolean",
             required=False,
         )
+        .param("search_text", "Pass to perform a search.", default="", required=False)
+        .param("search_mode", "Search mode", default="prefix", enum=["prefix", "text"], required=False)
         .pagingParams(defaultSort="created", defaultSortDir=SortDir.DESCENDING)
     )
     def list_datasets(
@@ -59,6 +61,8 @@ class BIDSDatasetResource(Resource):
         collection: GirderModel | None,
         parent: GirderModel | None,
         is_derivative: bool,
+        search_text: str,
+        search_mode: str,
         limit: int,
         offset: int,
         sort: str,
@@ -76,13 +80,24 @@ class BIDSDatasetResource(Resource):
         if is_derivative is not None:
             query.update({"dataset_description.DatasetType": "derivative" if is_derivative else "raw"})
 
-        return self._model.find(
-            query=query,
+        return self._list_datatasets(
+            query,
+            search_text,
+            search_mode,
             offset=offset,
             limit=limit,
             sort=sort,
             user=user,
         )
+
+    def _list_datatasets(self, query: dict[str, Any], search_text: str, search_mode: str, **kwargs) -> Cursor | Any:
+        if search_text:
+            if search_mode == "prefix":
+                return self._model.prefixSearch(query=search_text, filters=query, **kwargs)
+            if search_text == "text":
+                return self._model.textSearch(query=search_text, filters=query, **kwargs)
+
+        return self._model.find(query=query, **kwargs)
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @filtermodel(model=BIDSDatasetModel)

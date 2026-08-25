@@ -1,10 +1,11 @@
 from typing import Any
 
-from girder import plugin
+from girder import events, plugin
 from girder.utility.model_importer import ModelImporter
 
 from .api import BIDSDatasetResource, BIDSFolderResource, BIDSItemResource
 from .models import BIDSDatasetModel, BIDSFolderModel, BIDSItemModel
+from .utility import on_bids_metadata_updated
 
 
 class BIDSPlugin(plugin.GirderPlugin):
@@ -15,3 +16,5 @@ class BIDSPlugin(plugin.GirderPlugin):
         info["apiRoot"].bids_folder = BIDSFolderResource()
         ModelImporter.registerModel("bids_item", BIDSItemModel, plugin="bids_plugin")
         info["apiRoot"].bids_item = BIDSItemResource()
+
+        events.bind("model.bids_item.bids_metadata.updated", "onBIDSMetadataUpdated", on_bids_metadata_updated)

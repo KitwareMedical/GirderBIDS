@@ -19,6 +19,7 @@ class BIDSItemResource(Resource):
         self._model = BIDSItemModel()
         self.route("GET", (), self.list_items)
         self.route("GET", (":id", "path"), self.get_dataset_path)
+        self.route("PUT", (":id", "metadata"), self.set_bids_metadata)
         self.route("POST", (), self.create_item)
 
     @access.user(TokenScope.DATA_READ)
@@ -52,6 +53,8 @@ class BIDSItemResource(Resource):
         )
         .param("suffix", "Pass this to search BIDS item by suffix", required=False)
         .param("extension", "Pass this to search BIDS item by extension", required=False)
+        .param("search_text", "Pass to perform a search.", default="", required=False)
+        .param("search_mode", "Search mode", default="prefix", enum=["prefix", "text"], required=False)
         .pagingParams(defaultSort="name", defaultSortDir=SortDir.ASCENDING)
     )
     def list_items(
@@ -61,6 +64,8 @@ class BIDSItemResource(Resource):
         name: str | None,
         suffix: str | None,
         extension: str | None,
+        search_text: str,
+        search_mode: str,
         limit: int,
         offset: int,
         sort: Any,
@@ -79,13 +84,24 @@ class BIDSItemResource(Resource):
         if extension is not None:
             query.update({"extension": extension})
 
-        return self._model.find(
-            query=query,
+        return self._list_items(
+            query,
+            search_text,
+            search_mode,
             limit=limit,
             offset=offset,
             sort=sort,
             user=user,
         )
+
+    def _list_items(self, query: dict[str, Any], search_text: str, search_mode: str, **kwargs) -> Cursor | Any:
+        if search_text:
+            if search_mode == "prefix":
+                return self._model.prefixSearch(query=search_text, filters=query, **kwargs)
+            if search_text == "text":
+                return self._model.textSearch(query=search_text, filters=query, **kwargs)
+
+        return self._model.find(query=query, **kwargs)
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @filtermodel(model=BIDSItemModel)
@@ -146,3 +162,18 @@ class BIDSItemResource(Resource):
     )
     def get_dataset_path(self, item: GirderModel) -> list[GirderModel]:
         return self._model.parents_to_dataset(item, self.getCurrentUser())
+
+    @access.user(scope=TokenScope.DATA_WRITE)
+    @filtermodel(model=BIDSItemModel)
+    @autoDescribeRoute(
+        Description("Set bids_metadata fields on a BIDS item.")
+        .responseClass("BIDSItem")
+        .modelParam("id", model=BIDSItemModel, level=AccessType.WRITE)
+        .jsonParam(
+            "metadata", "A JSON object containing the bids metadata keys to add", paramType="body", requireObject=True
+        )
+        .errorResponse(("ID was invalid.", "Invalid JSON passed in request body.", "Metadata key name was invalid."))
+        .errorResponse("Write access was denied for the item.", 403)
+    )
+    def set_bids_metadata(self, item: GirderModel, metadata: dict[str, Any]) -> GirderModel | Any:
+        return self._model.set_bids_metadata(item, metadata)

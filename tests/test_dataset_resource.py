@@ -69,6 +69,26 @@ def test_list_derivative_datasets(
     assert any(ds["name"] == dataset_list[2]["name"] for ds in resp_dataset_list)
 
 
+def test_search_datasets(
+    db: Any, collection: GirderModel, dataset_list: list[GirderModel], server: Any, user: GirderModel
+) -> None:
+    resp = server.request(
+        method="GET",
+        path="/bids_dataset",
+        params={"collection_id": collection["_id"], "search_text": "Dataset 1"},
+        user=user,
+    )
+
+    assertStatusOk(resp)
+
+    resp_dataset_list = resp.json
+
+    assert len(resp_dataset_list) == 1
+    assert any(ds["name"] == dataset_list[0]["name"] for ds in resp_dataset_list)
+    assert not any(ds["name"] == dataset_list[1]["name"] for ds in resp_dataset_list)
+    assert not any(ds["name"] == dataset_list[2]["name"] for ds in resp_dataset_list)
+
+
 def test_create_dataset(
     db: Any, collection: GirderModel, raw_dataset_description: BIDSDescription, server: Any, user: GirderModel
 ) -> None:
