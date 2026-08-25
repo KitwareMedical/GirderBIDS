@@ -1,6 +1,6 @@
 [project]
 name = "GirderBIDS"
-version = "1.0.0"
+version = "1.1.0"
 description = "Girder BIDS project containing a Girder Plugin to handle BIDS and a CLI BIDS importer"
 authors = []
 dependencies = [
