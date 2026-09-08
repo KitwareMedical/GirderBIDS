@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.2.0 (2026-09-08)
+
+### Features
+
+- **remove event**: Delete sidecar on bids item deletion
+  ([`059d858`](https://github.com/KitwareMedical/GirderBIDS/commit/059d8583225cce29b2e83b2fd741daed896c59d1))
+
+
 ## v1.1.0 (2026-08-25)
 
 ### Features
