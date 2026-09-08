@@ -1,4 +1,4 @@
-from .events import on_bids_metadata_updated
+from .events import on_bids_metadata_updated, on_item_removed
 from .models import (
     BIDSDataset,
     BIDSDatatype,
@@ -18,4 +18,5 @@ __all__ = [
     "GirderModel",
     "MongoOperators",
     "on_bids_metadata_updated",
+    "on_item_removed",
 ]
