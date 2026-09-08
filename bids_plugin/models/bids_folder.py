@@ -32,7 +32,7 @@ class BIDSFolderModel(Folder):
                 raise ValidationException("Invalid BIDS Hierarchy: Session folder must be at subject level.")
             return
 
-        if folder_name in BIDSDatatype:
+        if BIDSDatatype.has_datatype(folder_name):
             if not parent_name.startswith(("sub-", "ses-")):
                 raise ValidationException(
                     "Invalid BIDS Hierarchy: Datatype folder must be at subject or session level."

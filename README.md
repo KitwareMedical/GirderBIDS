@@ -7,7 +7,7 @@ Data Structure (BIDS) format. The project includes:
 - A command-line interface (CLI) for validating and importing BIDS datasets into
   a Girder instance (with or without the plugin).
 
-## 1. Setup
+## 1. Setup the importer CLI
 
 ### Ubuntu 22.04:
 
@@ -32,61 +32,32 @@ importer (without validation)
 pip install ".[cli]"
 ```
 
-## 2. Build girder front
+### 2. Install MongoDB
 
-### Ubuntu 22.04
+If MongoDB is not already installed on your machine, you can install it
+following the instructions: https://www.mongodb.com/docs/manual/installation/
 
-```bash
-girder build
-```
+#### Ubuntu
 
-### MacOS
-
-Install npm using Homebrew :
+https://www.mongodb.com/docs/manual/tutorial/install-mongodb-enterprise-on-ubuntu/#std-label-install-mdb-enterprise-ubuntu
+Then:
 
 ```bash
-brew install node
+sudo systemctl start mongod
 ```
 
-Add the following environment variable:
+#### MacOS
+
+https://www.mongodb.com/docs/manual/tutorial/install-mongodb-enterprise-on-os-x/#std-label-install-enterprise-macos
+Then:
 
 ```bash
-export NODE_OPTIONS=--openssl-legacy-provider
+brew services start mongodb-community
 ```
 
-```bash
-girder build
-```
+#### Windows
 
-## 3. Install mongodb
-
-### Ubuntu 22.04
-
-To set up MongoDB 4.4 on Ubuntu 22.04 execute the following commands :
-
-```bash
-curl -fsSL https://pgp.mongodb.com/server-4.4.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-4.4.gpg --dearmor
-echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-4.4.gpg ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-apt-get update
-wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
-sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
-apt-get install -y mongodb-org mongo-tools
-sudo systemctl daemon-reload
-systemctl start mongod
-systemctl enable mongod
-chown mongodb:mongodb /var/log/mongodb/mongod.log
-chown -R mongodb:mongodb /var/lib/mongodb/*
-```
-
-### MacOS
-
-Add MongoDB 4.4:
-
-```bash
-brew tap mongodb/brew
-brew install mongodb-community@4.4
-brew services start mongodb-community@4.4
-```
+https://www.mongodb.com/docs/manual/tutorial/install-mongodb-enterprise-on-windows/#std-label-install-enterprise-windows
 
 ## 3. Serve girder
 

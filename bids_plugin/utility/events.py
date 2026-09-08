@@ -20,7 +20,7 @@ upload_model = Upload()
 
 
 def get_metadata_sidecar_name(bids_item: GirderModel) -> str:
-    return bids_item["name"].removesuffix(bids_item["extension"]) + JSON_EXT
+    return bids_item["name"].removesuffix(bids_item.get("extension") or "") + JSON_EXT
 
 
 def is_bids_item(item: GirderModel) -> bool:
@@ -68,7 +68,7 @@ def on_bids_metadata_updated(event: Event) -> None:
 
 def on_item_removed(event: Event) -> None:
     item = event.info
-    if not is_bids_item(item):
+    if not is_bids_item(item) or item.get("extension") == JSON_EXT:
         return
 
     metadata_sidecar_name = get_metadata_sidecar_name(item)
