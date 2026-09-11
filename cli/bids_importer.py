@@ -113,6 +113,10 @@ class BIDSImporter:
         if location_type == "folder":
             for item in self.girder_client.listItem(location_id):
                 if item["name"] == "dataset_description.json":
+                    if use_plugin:
+                        # with the plugin dataset_description is already in the dataset_description field of the model
+                        continue
+
                     dataset_desc = self._get_item_metadata(item)
                     self.girder_client.addMetadataToFolder(location_id, dataset_desc)
 
@@ -212,10 +216,10 @@ class BIDSImporter:
             self.girder_client.listFolder(self.root_folder_id, self.root_folder_type, self.dataset_name), None
         )
         if dataset_folder:
-            logger.info(f"Deleting {self.dataset_name}")
             self.girder_client.delete(
                 "resource", parameters={"resources": json.dumps({"folder": [dataset_folder["_id"]]})}
             )
+            logger.warning(f"{self.dataset_name} deleted from database after failed/partial import")
 
 
 def main(

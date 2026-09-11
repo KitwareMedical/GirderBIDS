@@ -7,6 +7,7 @@ GirderModel = dict[str, Any]
 
 JSON_EXT = "json"
 TSV_EXT = "tsv"
+DOC_FILES = ("README", "LICENSE", "CHANGES", "CODE_OF_CONDUCT")
 
 
 class BIDSDatatype(Enum):
@@ -25,6 +26,10 @@ class BIDSDatatype(Enum):
     NIRS = "nirs"
     MOTION = "motion"
     MRS = "mrs"
+
+    @classmethod
+    def has_datatype(cls, name: str) -> bool:
+        return name in (item.value for item in cls)
 
 
 @dataclass
